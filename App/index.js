@@ -5,13 +5,12 @@ import {
   StyleSheet,
   StatusBar,
   Dimensions,
-  TouchableOpacity,
-  Image,
-  Alert,
-  Animated
+  Alert
 } from "react-native";
 
 import { AVAILABLE_CARDS } from "./data/availableCards";
+import { Row } from "./components/Row";
+import { Card } from "./components/Card";
 
 const screen = Dimensions.get("window");
 const CARD_WIDTH = Math.floor(screen.width * 0.25);
@@ -45,142 +44,6 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT
   }
 });
-
-// get column offset based on column index
-const getColumnOffset = index => {
-  switch (index) {
-    case 0:
-      return 1.2;
-    case 1:
-      return 0;
-    case 2:
-      return -1.2;
-    default:
-      return 0;
-  }
-};
-
-class Card extends React.Component {
-  offset = new Animated.Value(CARD_WIDTH * getColumnOffset(this.props.index));
-
-  componentDidMount() {
-    // wait one second
-    this.timeout = setTimeout(() => {
-      Animated.timing(this.offset, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true
-      }).start();
-    }, 1000);
-  }
-
-  // clear timeout
-  componentWillUnmount() {
-    clearTimeout(this.timeout);
-  }
-
-  // get and display proper card image
-  render() {
-    const { onPress, image, isVisible } = this.props;
-    let displayImage = (
-      <Image source={image} style={styles.cardImage} resizeMode="contain" />
-    );
-
-    // show back if not visible
-    if (!isVisible) {
-      displayImage = (
-        <Image
-          source={require("./assets/card-back.png")}
-          style={styles.cardImage}
-          resizeMode="contain"
-        />
-      );
-    }
-
-    const animatedStyles = {
-      transform: [
-        {
-          // move left/right into columns
-          translateX: this.offset
-        }
-      ]
-    };
-
-    return (
-      <TouchableOpacity onPress={onPress}>
-        <Animated.View style={[styles.card, animatedStyles]}>
-          {displayImage}
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  }
-}
-
-// determine offset based on approx. row height
-const getRowOffset = index => {
-  switch (index) {
-    case 0:
-      return 1.5;
-    case 1:
-      return 0.5;
-    case 2:
-      return -0.5;
-    case 3:
-      return -1.5;
-    default:
-      return 0;
-  }
-};
-
-class Row extends React.Component {
-  // set offset based on row index
-  offset = new Animated.Value(CARD_HEIGHT * getRowOffset(this.props.index));
-
-  opacity = new Animated.Value(0);
-
-  componentDidMount() {
-    // wait one second
-    this.timeout = setTimeout(() => {
-      // run two animations in parallel
-      Animated.parallel([
-        // animation movement takes 250 ms
-        Animated.timing(this.offset, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true
-        }),
-        // fade in card for 100 ms
-        Animated.timing(this.opacity, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true
-        })
-      ]).start(); // start animation
-    }, 1000);
-  }
-
-  // clear timeout
-  componentWillUnmount() {
-    clearTimeout(this.timeout);
-  }
-
-  render() {
-    const animationStyles = {
-      opacity: this.opacity,
-      transform: [
-        {
-          // move up/down into rows
-          translateY: this.offset
-        }
-      ]
-    };
-    return (
-      <Animated.View style={[styles.row, animationStyles]}>
-        {this.props.children}
-      </Animated.View>
-    );
-  }
-}
 
 const initialState = {
   data: [],
@@ -301,27 +164,62 @@ class App extends React.Component {
     );
   };
 
+  //   render() {
+  //     return (
+  //       <View style={styles.container}>
+  //         <StatusBar barStyle="light-content" />
+  //         <SafeAreaView style={styles.safearea}>
+  //           {this.state.data.map((row, rowIndex) => (
+  //             <Row key={row.name} index={rowIndex}>
+  //               {row.columns.map((card, index) => {
+  //                 const cardId = `${row.name}-${card.image}-${index}`; // unique ID for each card
+
+  //                 return (
+  //                   <Card
+  //                     key={cardId}
+  //                     index={index}
+  //                     onPress={() => this.handleCardPress(cardId, card.image)} // handle when card is pressed
+  //                     image={card.image}
+  //                     isVisible={
+  //                       // determined by selected cards and matching pairs
+  //                       this.state.selectedIndices.includes(cardId) ||
+  //                       this.state.matchedPairs.includes(card.image)
+  //                     }
+  //                   />
+  //                 );
+  //               })}
+  //             </Row>
+  //           ))}
+  //         </SafeAreaView>
+  //       </View>
+  //     );
+  //   }
+  // }
+
   render() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" />
         <SafeAreaView style={styles.safearea}>
+          {/* See above where this.state.data is set (contains cards) */}
           {this.state.data.map((row, rowIndex) => (
+            // Our ROW component
             <Row key={row.name} index={rowIndex}>
               {row.columns.map((card, index) => {
-                const cardId = `${row.name}-${card.image}-${index}`; // unique ID for each card
+                // Unique id for each and every card
+                const cardId = `${row.name}-${card.image}-${index}`;
 
+                // Our CARD component
                 return (
                   <Card
                     key={cardId}
                     index={index}
-                    onPress={() => this.handleCardPress(cardId, card.image)} // handle when card is pressed
+                    onPress={() => this.handleCardPress(cardId, card.image)}
                     image={card.image}
                     isVisible={
-                      // determined by selected cards and matching pairs
                       this.state.selectedIndices.includes(cardId) ||
                       this.state.matchedPairs.includes(card.image)
-                    }
+                    } // Set isVisible to true if card is included in selectedIndices or matchedPairs
                   />
                 );
               })}

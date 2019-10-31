@@ -4,17 +4,13 @@ import {
   SafeAreaView,
   StyleSheet,
   StatusBar,
-  Dimensions,
-  Alert
+  Alert,
+  Text
 } from "react-native";
 
 import { AVAILABLE_CARDS } from "./data/availableCards";
 import { Row } from "./components/Row";
 import { Card } from "./components/Card";
-
-const screen = Dimensions.get("window");
-const CARD_WIDTH = Math.floor(screen.width * 0.25);
-const CARD_HEIGHT = Math.floor(CARD_WIDTH * (323 / 222));
 
 const styles = StyleSheet.create({
   container: {
@@ -26,22 +22,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flex: 1
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    width: "100%",
-    marginVertical: 10
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderColor: "#fff",
-    borderWidth: 5,
-    borderRadius: 3
-  },
-  cardImage: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT
+  text: {
+    color: "white",
+    fontWeight: "bold"
   }
 });
 
@@ -54,7 +37,8 @@ const initialState = {
 };
 
 class App extends React.Component {
-  state = initialState;
+  // eslint-disable-next-line react/state-in-constructor
+  state = { leastMoves: 99999, ...initialState };
 
   componentDidMount() {
     this.draw(); // draw cards (start)
@@ -62,23 +46,47 @@ class App extends React.Component {
 
   componentDidUpdate() {
     if (this.state.matchedPairs.length >= 6) {
-      this.gameComplete(); // game done when all matches found
+      this.gameComplete(this.state.moveCount, this.state.leastMoves); // game done when all matches found
     }
   }
 
   // alert when game complete
-  gameComplete = () => {
-    Alert.alert(
-      "Winner!",
-      `You completed the puzzle in ${this.state.moveCount} moves!`,
-      [
-        {
-          // reset game (initial state and re-draw cards)
-          text: "Reset Game",
-          onPress: () => this.setState({ ...initialState }, () => this.draw())
-        }
-      ]
-    );
+  gameComplete = (moves, least) => {
+    // console.log("moves: ", moves, "least: ", least);
+
+    // /////////////////////////////////////////////////////////////////
+    // if the number of moves in current game is less than the least recorded, that is the new high score
+    if (moves < least) {
+      Alert.alert(
+        "Winner!",
+        `You completed the puzzle in ${this.state.moveCount} moves! You set the new high score!`,
+        [
+          {
+            // reset game (initial state and re-draw cards)
+            text: "Reset Game",
+            onPress: () =>
+              this.setState({ ...initialState, leastMoves: moves }, () =>
+                this.draw()
+              )
+          } // always keep current least number of moves
+        ]
+      );
+    } else {
+      Alert.alert(
+        "Winner!",
+        `You completed the puzzle in ${this.state.moveCount} moves! The high score is ${least} moves.`,
+        [
+          {
+            // reset game (initial state and re-draw cards)
+            text: "Reset Game",
+            onPress: () =>
+              this.setState({ ...initialState, leastMoves: least }, () =>
+                this.draw()
+              )
+          } // always keep current least number of moves
+        ]
+      );
+    }
   };
 
   draw = () => {
@@ -125,6 +133,7 @@ class App extends React.Component {
 
   handleCardPress = (cardId, image) => {
     let callWithUserParams = false;
+
     this.setState(
       ({ selectedIndices, currentImage, matchedPairs, moveCount }) => {
         const nextState = {};
@@ -164,57 +173,30 @@ class App extends React.Component {
     );
   };
 
-  //   render() {
-  //     return (
-  //       <View style={styles.container}>
-  //         <StatusBar barStyle="light-content" />
-  //         <SafeAreaView style={styles.safearea}>
-  //           {this.state.data.map((row, rowIndex) => (
-  //             <Row key={row.name} index={rowIndex}>
-  //               {row.columns.map((card, index) => {
-  //                 const cardId = `${row.name}-${card.image}-${index}`; // unique ID for each card
-
-  //                 return (
-  //                   <Card
-  //                     key={cardId}
-  //                     index={index}
-  //                     onPress={() => this.handleCardPress(cardId, card.image)} // handle when card is pressed
-  //                     image={card.image}
-  //                     isVisible={
-  //                       // determined by selected cards and matching pairs
-  //                       this.state.selectedIndices.includes(cardId) ||
-  //                       this.state.matchedPairs.includes(card.image)
-  //                     }
-  //                   />
-  //                 );
-  //               })}
-  //             </Row>
-  //           ))}
-  //         </SafeAreaView>
-  //       </View>
-  //     );
-  //   }
-  // }
-
   render() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" />
         <SafeAreaView style={styles.safearea}>
           {/* See above where this.state.data is set (contains cards) */}
+
+          <Text style={styles.text}>
+            {`High Score: ${this.state.leastMoves}`}
+          </Text>
+
           {this.state.data.map((row, rowIndex) => (
             // Our ROW component
             <Row key={row.name} index={rowIndex}>
               {row.columns.map((card, index) => {
                 // Unique id for each and every card
-                const cardId = `${row.name}-${card.image}-${index}`;
+                const cardId = `${row.name}-${card.image}-${index}`; // unique ID for each card
 
                 // Our CARD component
                 return (
                   <Card
                     key={cardId}
                     index={index}
-                    onPress={() => this.handleCardPress(cardId, card.image)}
+                    onPress={() => this.handleCardPress(cardId, card.image)} // handle when card is pressed
                     image={card.image}
                     isVisible={
                       this.state.selectedIndices.includes(cardId) ||

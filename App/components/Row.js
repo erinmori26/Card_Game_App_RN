@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     alignItems: "center",
     width: "100%",
-    marginVertical: 10
+    marginVertical: 5
   }
 });
 
